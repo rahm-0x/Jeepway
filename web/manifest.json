@@ -1,6 +1,6 @@
 {
-    "name": "jeepway",
-    "short_name": "jeepway",
+    "name": "Jeepway",
+    "short_name": "Jeepway",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
