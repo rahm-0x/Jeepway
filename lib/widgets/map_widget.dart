@@ -1,8 +1,9 @@
-import 'dart:async'; // Import Timer
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
+import 'package:geolocator/geolocator.dart'; // Import geolocator for user location
 import '../utils/constants.dart'; // Import the constants for jeepney data
 
 class MapWidget extends StatefulWidget {
@@ -22,23 +23,62 @@ class MapWidget extends StatefulWidget {
 
 class _MapWidgetState extends State<MapWidget> {
   List<LatLng> jeepneyPositions = [];
+  LatLng? userPosition; // Store user's current location
   Timer? _movementTimer;
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize jeepney positions at the start of their respective routes
     jeepneyPositions = jeepneyRoutes.map((route) => route[0]).toList();
-
-    // Start jeepney movement
     _startMovingJeepneys();
+    _getUserLocation();
   }
 
   @override
   void dispose() {
     _movementTimer?.cancel(); // Cancel the timer when the widget is disposed
     super.dispose();
+  }
+
+  // Request location permissions and get the user's location
+  Future<void> _getUserLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Location services are disabled.')),
+      );
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Location permissions are denied.')),
+        );
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Location permissions are permanently denied.')),
+      );
+      return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    setState(() {
+      userPosition = LatLng(position.latitude, position.longitude);
+    });
   }
 
   void _startMovingJeepneys() {
@@ -56,79 +96,103 @@ class _MapWidgetState extends State<MapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return FlutterMap(
-      mapController: widget.mapController,
-      options: MapOptions(
-        initialCenter: cityCoordinates[widget.selectedCity]!,
-        initialZoom: 13.0,
-        minZoom: 7.0,
-        onTap: (_, __) => widget.popupController.hideAllPopups(),
-      ),
+    return Stack(
       children: [
-        TileLayer(
-          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-          subdomains: ['a', 'b', 'c'],
-        ),
-        // Update MarkerLayer to display the updated jeepney positions
-        MarkerLayer(
-          markers: jeepneyPositions
-              .asMap()
-              .entries
-              .map((entry) => Marker(
-                    width: 80.0,
-                    height: 80.0,
-                    point: entry.value, // Display updated jeepney position
-                    child: Image.asset(
-                      'assets/jeepneyicon.png',
-                      width: 40,
-                      height: 40,
-                    ),
-                  ))
-              .toList(),
-        ),
-        PopupMarkerLayerWidget(
-          options: PopupMarkerLayerOptions(
-            markers: jeepneyPositions
-                .asMap()
-                .entries
-                .map((entry) => Marker(
-                      width: 80.0,
-                      height: 80.0,
-                      point: entry.value,
-                      key: Key('marker_${entry.key}'),
-                      child: Image.asset(
-                        'assets/jeepneyicon.png',
+        FlutterMap(
+          mapController: widget.mapController,
+          options: MapOptions(
+            initialCenter: cityCoordinates[widget.selectedCity]!,
+            maxZoom: 30.0,
+            minZoom: 1.0,
+            onTap: (_, __) => widget.popupController.hideAllPopups(),
+          ),
+          children: [
+            TileLayer(
+              urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+              subdomains: ['a', 'b', 'c'],
+            ),
+            MarkerLayer(
+              markers: jeepneyPositions
+                  .map((position) => Marker(
+                        point: position,
                         width: 40,
                         height: 40,
-                      ),
-                    ))
-                .toList(),
-            popupController: widget.popupController,
-            popupDisplayOptions: PopupDisplayOptions(
-              builder: (BuildContext context, Marker marker) {
-                int index = jeepneyPositions
-                    .indexWhere((position) => position == marker.point);
-
-                if (index >= 0 && index < jeepneyDetails.length) {
-                  Map<String, dynamic> details = jeepneyDetails[index];
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('Route Number: ${details['routeNumber']}',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text('Total Seats: ${details['seats']}'),
-                        ],
-                      ),
-                    ),
-                  );
-                } else {
-                  return SizedBox.shrink();
-                }
-              },
+                        child: Image.asset(
+                          // Replaced 'builder' with 'child'
+                          'assets/jeepneyicon.png',
+                        ),
+                      ))
+                  .toList(),
             ),
+            PopupMarkerLayerWidget(
+              options: PopupMarkerLayerOptions(
+                markers: jeepneyPositions
+                    .map((position) => Marker(
+                          point: position,
+                          width: 40,
+                          height: 40,
+                          key: Key(
+                              'marker_${jeepneyPositions.indexOf(position)}'),
+                          child: Image.asset(
+                            // Replaced 'builder' with 'child'
+                            'assets/jeepneyicon.png',
+                          ),
+                        ))
+                    .toList(),
+                popupController: widget.popupController,
+                popupDisplayOptions: PopupDisplayOptions(
+                  builder: (BuildContext context, Marker marker) {
+                    int index = jeepneyPositions.indexOf(marker.point);
+
+                    if (index >= 0 && index < jeepneyDetails.length) {
+                      Map<String, dynamic> details = jeepneyDetails[index];
+                      return Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Route Number: ${details['routeNumber']}',
+                                  style:
+                                      TextStyle(fontWeight: FontWeight.bold)),
+                              Text('Total Seats: ${details['seats']}'),
+                            ],
+                          ),
+                        ),
+                      );
+                    } else {
+                      return SizedBox.shrink();
+                    }
+                  },
+                ),
+              ),
+            ),
+            if (userPosition != null)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: userPosition!,
+                    child: Icon(
+                      // Replaced 'builder' with 'child'
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        Positioned(
+          bottom: 20,
+          right: 20,
+          child: FloatingActionButton(
+            child: Icon(Icons.my_location),
+            onPressed: () {
+              if (userPosition != null) {
+                widget.mapController.move(userPosition!, 15.0);
+              }
+            },
           ),
         ),
       ],
