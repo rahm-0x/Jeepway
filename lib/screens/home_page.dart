@@ -23,7 +23,6 @@ class _JeepwayHomePageState extends State<JeepwayHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Jeepway'),
         actions: [
           Builder(
             builder: (context) => IconButton(
