@@ -41,3 +41,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 lib/services/jeepway-service-account.json
+lib/services/jeepway-service-account.json
