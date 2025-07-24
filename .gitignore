@@ -44,3 +44,5 @@ app.*.map.json
 /android/app/release
 lib/services/jeepway-service-account.json
 lib/services/jeepway-service-account.json
+lib/firebase_options.dart
+lib/firebase_options.dart
