@@ -11,7 +11,7 @@ class MapWidget extends StatefulWidget {
   final PopupController popupController;
   final String selectedCity;
 
-  MapWidget({
+  const MapWidget({super.key, 
     required this.mapController,
     required this.popupController,
     required this.selectedCity,

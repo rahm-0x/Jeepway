@@ -4,11 +4,10 @@ import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
 import '../utils/constants.dart'; // Import constants like cityCoordinates and jeepney data
 import '../widgets/map_widget.dart';
 import '../widgets/dropdown_city.dart';
-import 'login_signup_page.dart';
-import 'add_jeep_page.dart'; // Add jeep form page
-import 'manage_fleet_page.dart'; // Manage fleet page
 
 class JeepwayHomePage extends StatefulWidget {
+  const JeepwayHomePage({super.key});
+
   @override
   _JeepwayHomePageState createState() => _JeepwayHomePageState();
 }
@@ -35,17 +34,12 @@ class _JeepwayHomePageState extends State<JeepwayHomePage> {
       endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
-          children: <Widget>[
+          children: [
             DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.blue,
-              ),
+              decoration: BoxDecoration(color: Colors.blue),
               child: Text(
                 _isLoggedIn ? 'Welcome, User' : 'Please Login/Register',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 24),
               ),
             ),
             if (!_isLoggedIn)
@@ -53,37 +47,12 @@ class _JeepwayHomePageState extends State<JeepwayHomePage> {
                 leading: Icon(Icons.login),
                 title: Text('Login/Register'),
                 onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginSignupPage()),
-                  );
-                  // Simulate login after returning
-                  setState(() {
-                    _isLoggedIn =
-                        true; // Mark as logged in after returning from login page
-                  });
-                },
-              ),
-            if (_isLoggedIn)
-              ListTile(
-                leading: Icon(Icons.directions_car),
-                title: Text('Add Jeep'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => AddJeepPage()),
-                  );
-                },
-              ),
-            if (_isLoggedIn)
-              ListTile(
-                leading: Icon(Icons.settings),
-                title: Text('Manage Fleet'),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ManageFleetPage()),
-                  );
+                  final result = await Navigator.pushNamed(context, '/login');
+                  if (result == true) {
+                    setState(() {
+                      _isLoggedIn = true;
+                    });
+                  }
                 },
               ),
             if (_isLoggedIn)
@@ -91,11 +60,10 @@ class _JeepwayHomePageState extends State<JeepwayHomePage> {
                 leading: Icon(Icons.logout),
                 title: Text('Logout'),
                 onTap: () {
-                  // Simulate logout by changing the state
                   setState(() {
-                    _isLoggedIn = false; // Mark as logged out
+                    _isLoggedIn = false;
                   });
-                  Navigator.pop(context); // Close the drawer
+                  Navigator.pop(context); // Closes the drawer
                 },
               ),
           ],

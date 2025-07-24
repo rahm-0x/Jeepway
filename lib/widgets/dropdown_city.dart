@@ -5,7 +5,7 @@ class CityDropdown extends StatelessWidget {
   final String selectedCity;
   final ValueChanged<String?> onCityChanged;
 
-  CityDropdown({required this.selectedCity, required this.onCityChanged});
+  const CityDropdown({super.key, required this.selectedCity, required this.onCityChanged});
 
   @override
   Widget build(BuildContext context) {
