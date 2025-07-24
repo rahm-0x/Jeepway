@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "652170077212",
+    "firebase_url": "https://newjeepway-default-rtdb.firebaseio.com",
+    "project_id": "newjeepway",
+    "storage_bucket": "newjeepway.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:652170077212:android:d64c65c10e57296ba1ebd9",
+        "android_client_info": {
+          "package_name": "com.example.flutter_web_nickname_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwEH-J7lIWeODdSwqJ_SufqDr-KhtYO1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:652170077212:android:12d8c962c49d71dda1ebd9",
+        "android_client_info": {
+          "package_name": "com.example.jeepway"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwEH-J7lIWeODdSwqJ_SufqDr-KhtYO1Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

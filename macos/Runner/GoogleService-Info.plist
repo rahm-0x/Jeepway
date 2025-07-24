@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyCO__NS2S3Mw4USx-tdUEvytPoKe24LnTk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>652170077212</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.jeepway</string>
+	<key>PROJECT_ID</key>
+	<string>newjeepway</string>
+	<key>STORAGE_BUCKET</key>
+	<string>newjeepway.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:652170077212:ios:bc6673cfa4e32927a1ebd9</string>
+	<key>DATABASE_URL</key>
+	<string>https://newjeepway-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

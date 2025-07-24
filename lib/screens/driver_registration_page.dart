@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:jeepway/services/location_service.dart'; // ✅ Location stream service
 
 class DriverRegistrationPage extends StatefulWidget {
   const DriverRegistrationPage({super.key});
@@ -20,7 +21,6 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
   final TextEditingController nicknameController = TextEditingController();
 
   bool isSubmitting = false;
-  bool locationEnabled = false;
 
   Future<void> _enableLocationAndSubmit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -49,7 +49,7 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
         throw Exception("Location permission denied");
       }
 
-      // Get position
+      // Get initial position
       Position position = await Geolocator.getCurrentPosition();
       final dbRef = FirebaseDatabase.instance.ref("jeep_positions/${user.uid}");
 
@@ -59,6 +59,9 @@ class _DriverRegistrationPageState extends State<DriverRegistrationPage> {
         'nickname': nicknameController.text.trim(),
         'timestamp': DateTime.now().toIso8601String(),
       });
+
+      // ✅ Start live stream after initial push
+      await LocationService.startDriverLocationStream();
 
       // ✅ Navigate to home
       Navigator.pushNamedAndRemoveUntil(context, '/', (_) => false);

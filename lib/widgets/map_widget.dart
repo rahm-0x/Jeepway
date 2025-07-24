@@ -3,185 +3,122 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map_marker_popup/flutter_map_marker_popup.dart';
-import 'package:geolocator/geolocator.dart'; // Import geolocator for user location
-import '../utils/constants.dart'; // Import the constants for jeepney data
+import 'package:firebase_database/firebase_database.dart';
+import 'package:geolocator/geolocator.dart';
+import '../utils/constants.dart'; // Still needed for cityCoordinates
 
 class MapWidget extends StatefulWidget {
   final MapController mapController;
   final PopupController popupController;
   final String selectedCity;
 
-  const MapWidget({super.key, 
+  const MapWidget({
+    super.key,
     required this.mapController,
     required this.popupController,
     required this.selectedCity,
   });
 
   @override
-  _MapWidgetState createState() => _MapWidgetState();
+  State<MapWidget> createState() => _MapWidgetState();
 }
 
 class _MapWidgetState extends State<MapWidget> {
-  List<LatLng> jeepneyPositions = [];
-  LatLng? userPosition; // Store user's current location
-  Timer? _movementTimer;
+  LatLng? userPosition;
 
   @override
   void initState() {
     super.initState();
-
-    jeepneyPositions = jeepneyRoutes.map((route) => route[0]).toList();
-    _startMovingJeepneys();
     _getUserLocation();
   }
 
-  @override
-  void dispose() {
-    _movementTimer?.cancel(); // Cancel the timer when the widget is disposed
-    super.dispose();
-  }
-
-  // Request location permissions and get the user's location
   Future<void> _getUserLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
 
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Location services are disabled.')),
-      );
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
+    LocationPermission permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Location permissions are denied.')),
-        );
-        return;
-      }
     }
-
-    if (permission == LocationPermission.deniedForever) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Location permissions are permanently denied.')),
-      );
-      return;
-    }
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) return;
 
     Position position = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+        desiredAccuracy: LocationAccuracy.high);
 
     setState(() {
       userPosition = LatLng(position.latitude, position.longitude);
     });
   }
 
-  void _startMovingJeepneys() {
-    _movementTimer = Timer.periodic(Duration(seconds: 3), (timer) {
-      setState(() {
-        for (int i = 0; i < jeepneyRoutes.length; i++) {
-          LatLng currentPosition = jeepneyPositions[i];
-          int nextIndex = (jeepneyRoutes[i].indexOf(currentPosition) + 1) %
-              jeepneyRoutes[i].length;
-          jeepneyPositions[i] = jeepneyRoutes[i][nextIndex];
-        }
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
+    final DatabaseReference dbRef =
+        FirebaseDatabase.instance.ref('jeep_positions');
+
     return Stack(
       children: [
-        FlutterMap(
-          mapController: widget.mapController,
-          options: MapOptions(
-            initialCenter: cityCoordinates[widget.selectedCity]!,
-            maxZoom: 30.0,
-            minZoom: 1.0,
-            onTap: (_, __) => widget.popupController.hideAllPopups(),
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-              subdomains: ['a', 'b', 'c'],
-            ),
-            MarkerLayer(
-              markers: jeepneyPositions
-                  .map((position) => Marker(
-                        point: position,
+        StreamBuilder<DatabaseEvent>(
+          stream: dbRef.onValue,
+          builder: (context, snapshot) {
+            List<Marker> jeepMarkers = [];
+
+            if (snapshot.hasData &&
+                snapshot.data!.snapshot.value != null) {
+              final data = Map<String, dynamic>.from(
+                  snapshot.data!.snapshot.value as Map);
+
+              data.forEach((_, value) {
+                final jeep = Map<String, dynamic>.from(value);
+                if (jeep.containsKey('latitude') &&
+                    jeep.containsKey('longitude')) {
+                  final lat = double.tryParse(jeep['latitude'].toString());
+                  final lng = double.tryParse(jeep['longitude'].toString());
+                  if (lat != null && lng != null) {
+                    jeepMarkers.add(
+                      Marker(
+                        point: LatLng(lat, lng),
                         width: 40,
                         height: 40,
-                        child: Image.asset(
-                          // Replaced 'builder' with 'child'
-                          'assets/jeepneyicon.png',
-                        ),
-                      ))
-                  .toList(),
-            ),
-            PopupMarkerLayerWidget(
-              options: PopupMarkerLayerOptions(
-                markers: jeepneyPositions
-                    .map((position) => Marker(
-                          point: position,
-                          width: 40,
-                          height: 40,
-                          key: Key(
-                              'marker_${jeepneyPositions.indexOf(position)}'),
-                          child: Image.asset(
-                            // Replaced 'builder' with 'child'
-                            'assets/jeepneyicon.png',
-                          ),
-                        ))
-                    .toList(),
-                popupController: widget.popupController,
-                popupDisplayOptions: PopupDisplayOptions(
-                  builder: (BuildContext context, Marker marker) {
-                    int index = jeepneyPositions.indexOf(marker.point);
+                        child: Image.asset('assets/jeepneyicon.png'),
+                      ),
+                    );
+                  }
+                }
+              });
+            }
 
-                    if (index >= 0 && index < jeepneyDetails.length) {
-                      Map<String, dynamic> details = jeepneyDetails[index];
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('Route Number: ${details['routeNumber']}',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
-                              Text('Total Seats: ${details['seats']}'),
-                            ],
-                          ),
-                        ),
-                      );
-                    } else {
-                      return SizedBox.shrink();
-                    }
-                  },
+            return FlutterMap(
+              mapController: widget.mapController,
+              options: MapOptions(
+                initialCenter: cityCoordinates[widget.selectedCity]!,
+                maxZoom: 30.0,
+                minZoom: 1.0,
+                onTap: (_, __) => widget.popupController.hideAllPopups(),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: ['a', 'b', 'c'],
                 ),
-              ),
-            ),
-            if (userPosition != null)
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: userPosition!,
-                    child: Icon(
-                      // Replaced 'builder' with 'child'
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
-                    ),
+                MarkerLayer(markers: jeepMarkers),
+                if (userPosition != null)
+                  MarkerLayer(
+                    markers: [
+                      Marker(
+                        point: userPosition!,
+                        child: Icon(
+                          Icons.location_on,
+                          color: Colors.red,
+                          size: 40,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-          ],
+              ],
+            );
+          },
         ),
         Positioned(
           bottom: 20,
